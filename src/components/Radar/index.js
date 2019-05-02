@@ -5,7 +5,6 @@ import * as d3 from 'd3'
 
 import { groupBy } from '../../utils/array'
 
-import { getBlipShape, } from './d3/blip'
 import { combineBBoxIntoRect, rectOverlapped, isRectOutOfArc, restrictRectWithinArc, restrictRectWithinArc2 } from './d3/rect-on-coord'
 import { cartesianToPolar, polarToCartesian, } from './d3/polar-and-cartesian'
 
@@ -143,55 +142,87 @@ class Radar extends Component {
     return { arcs }
   }
 
-  // blips: [
-  //   { sector: 'UnderWit', name: 'Unmistakeable', score: 8, detail: '' },
-  //   { sector: 'UnderWit', name: 'Unequivocal', score: 8 },
-  //   { sector: 'UnderWit', name: 'Showing', score: 8 },
-  //   { sector: 'Sightworthy', name: 'Illustration', score: 8 },
-  //   { sector: 'Sightworthy', name: 'Silkworms', score: 8 },
-  //   { sector: 'UPAS', name: 'With', score: 6 },
-  // ]
-  drawBlips(svg, g, arcs) {
-    const { misc, blips } = this.props.data
+  enhanceBlipsData(blips) {
     const { radius } = this
 
-    const minAndMax = blips.map(blip => blip.score).reduce((acc, cur) => [Math.min(acc[0], cur), Math.max(acc[1], cur)], [Infinity, -Infinity])
-    const scoreScale = d3.scaleLinear().domain(minAndMax).range([radius, 10])
+    const blipShapes = [
+      {
+        shapeName: 'rect',
+        shapeTransformation:  null,
+      },
+      {
+        shapeName: 'rect',
+        shapeTransformation:  (x, y) => `rotate(45, ${x}, ${y})`,
+      },
+      {
+        shapeName: 'circle',
+        shapeTransformation: null
+      }
+    ]
 
-    let blipsInGroups = Object.values(groupBy(blips, 'sector'))
-    blipsInGroups = blipsInGroups.map((sectorBlips, sectorIndex) => sectorBlips.map((blip, index) => {
-      const r = scoreScale(blip.score)
+    const uniqueSectorNames = [...new Set(blips.map(blip => blip.sector))]
+    const minAndMaxOfBlipScore = blips.map(blip => blip.score).reduce((acc, cur) => [Math.min(acc[0], cur), Math.max(acc[1], cur)], [Infinity, -Infinity])
+    const scoreToRadiusScale = d3.scaleLinear().domain(minAndMaxOfBlipScore).range([radius, 10])
+
+    return blips.map(blip => {
+      const sectorIndex = uniqueSectorNames.indexOf(blip.sector)
+      const r = scoreToRadiusScale(blip.score)
       return {
         ...blip,
-        sectorIndex,
         r,
+        sectorIndex,
+        ...blipShapes[sectorIndex % blipShapes.length],
         x: Math.sin(Math.PI/4) * r * (sectorIndex < 2 ? 1 : -1),
         y: Math.sin(Math.PI/4) * r * (sectorIndex > 0 && sectorIndex < 3 ? 1 : -1),
       }
-    }))
+    })
+  }
+
+  positionTextNextToSymbol(eachBlipSymbol, eachBlipText){
+    eachBlipText.nodes().forEach((node, index) => {
+      const symboleNode = eachBlipSymbol.nodes()[index]
+      const d3node = d3.select(node)
+      const data = d3node.data()[0]
+      if (data.sectorIndex === 0 || data.sectorIndex === 1) {
+        d3node.attr('x', Number(d3node.attr('x')) + symboleNode.getBBox().width / 2)
+      } else {
+        d3node.attr('x', Number(d3node.attr('x')) - node.getBBox().width - symboleNode.getBBox().width / 2 - 2)
+      }
+      if (data.sectorIndex === 1 || data.sectorIndex === 2) {
+        d3node.attr('y', Number(d3node.attr('y')) + node.getBBox().height / 2)
+      }
+    })
+  }
+
+  drawBlips(svg, g, arcs) {
+    const { misc, blips } = this.props.data
 
     const color = d3.scaleOrdinal(d3.schemeCategory10)
 
-    const blipsInsector = g.selectAll('g.blips-in-sector')
-                           .data(blipsInGroups)
-                           .enter()
-                             .append('g')
-                             .attr('class', (d, i) => `blips-in-sector-${i}`)
+    console.log(this.enhanceBlipsData(blips))
+    const eachBlip = g.append('g')
+                      .attr('class', 'blips')
+                      .selectAll('g.blip')
+                      .data(this.enhanceBlipsData(blips))
+                      .enter()
+                        .append('g')
+                        .attr('class', 'blip')
+                        .attr('sector-name', d => d.sector)
+                        .attr('sector-index', d => d.sectorIndex)
 
-    const eachBlip = blipsInsector.selectAll('g.blip')
-                                  .data(d => d)
-                                  .enter()
-                                    .append('g')
-                                    .attr('class', 'blip')
-
-
-    const eachBlipSymbol = eachBlip.append('path')
-                                    .attr('class', 'blip-element blip-symbol')
-                                    .attr('d', d => getBlipShape(d.sectorIndex))
-                                    .style('fill', d => color(d.sectorIndex))
-                                    .attr('x', d => d.x)
-                                    .attr('y', d => d.y)
-                                    .attr('transform', d => `translate(${d.x}, ${d.y}) scale(1)`)
+    const eachBlipSymbol = eachBlip.append(d => document.createElementNS(d3.namespaces.svg, d.shapeName))
+                                   .attr('class', 'blip-element blip-symbol')
+                                   .style('fill', d => color(d.sectorIndex))
+                                   .attr('width', 24)
+                                   .attr('height', 24)
+                                   .attr('r', 12)
+                                   .attr('x', d => d.x - 12)
+                                   .attr('y', d => d.y - 12) // For rect, (x, y) represents coordinate of top-left corner, so with width/height = 24, we make adjustments
+                                   .attr('rx', '0.4em')
+                                   .attr('ry', '0.4em')
+                                   .attr('cx', d => d.x)
+                                   .attr('cy', d => d.y)
+                                   .attr('transform', d => d.shapeTransformation && d.shapeTransformation(d.x, d.y))
 
     const eachBlipText = eachBlip.append('text')
                                  .attr('class', 'blip-element blip-text')
@@ -199,7 +230,7 @@ class Radar extends Component {
                                  .attr('y', d => d.y)
                                  .text(d => d.name)
 
-    return { eachBlipSymbol, eachBlipText }
+   this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
   }
 
 
@@ -290,13 +321,13 @@ class Radar extends Component {
           // console.log('offset for', data.name, offset, 'offset for', data1.name, offset1)
           d3.select(symbolNode).attr('x', Number(d3.select(symbolNode).attr('x')) + offset.x)
                                .attr('y', Number(d3.select(symbolNode).attr('y')) + offset.y)
-                               .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
+                               // .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
           d3.select(textNode).attr('x', Number(d3.select(textNode).attr('x')) + offset.x)
                              .attr('y', Number(d3.select(textNode).attr('y')) + offset.y)
 
           d3.select(symbolNode1).attr('x', Number(d3.select(symbolNode1).attr('x')) + offset1.x)
                                 .attr('y', Number(d3.select(symbolNode1).attr('y')) + offset1.y)
-                                .attr('transform', `translate(${Number(d3.select(symbolNode1).attr('x'))}, ${ Number(d3.select(symbolNode1).attr('y'))})`)
+                                // .attr('transform', `translate(${Number(d3.select(symbolNode1).attr('x'))}, ${ Number(d3.select(symbolNode1).attr('y'))})`)
           d3.select(textNode1).attr('x', Number(d3.select(textNode1).attr('x')) + offset1.x)
                               .attr('y', Number(d3.select(textNode1).attr('y')) + offset1.y)
 
@@ -324,7 +355,7 @@ class Radar extends Component {
 
         d3.select(symbolNode).attr('x', Number(d3.select(symbolNode).attr('x')) + offsetX)
                              .attr('y', Number(d3.select(symbolNode).attr('y')) + offsetY)
-                             .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
+                             // .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
         d3.select(textNode).attr('x', Number(d3.select(textNode).attr('x')) + offsetX)
                            .attr('y', Number(d3.select(textNode).attr('y')) + offsetY)
 
@@ -355,8 +386,8 @@ class Radar extends Component {
   componentDidMount() {
     const { svg, g } = this.initateSvg()
     const { arcs } = this.drawBackgroundCirclesAndAxis(svg, g)
-    const { eachBlipSymbol, eachBlipText } = this.drawBlips(svg, g, arcs)
-    this.distributeBlips(eachBlipSymbol, eachBlipText, arcs)
+    this.drawBlips(svg, g, arcs)
+    // this.distributeBlips(eachBlipSymbol, eachBlipText, arcs)
   }
 
   componentWillMount() {
