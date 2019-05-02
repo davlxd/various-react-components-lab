@@ -230,6 +230,11 @@ class Radar extends Component {
       symbolBBox.x = symbolBBox.x + Number(d3SymbolNode.attr('x'))
       symbolBBox.y = symbolBBox.y + Number(d3SymbolNode.attr('y'))
       return combineBBoxIntoRect(textBBox, symbolBBox, { x: Number(d3SymbolNode.attr('x')) , y: Number(d3SymbolNode.attr('y')) })
+      // return {
+      //   topLeft: symbolBBox,
+      //   bottomRight: { x: symbolBBox.x + symbolBBox.width, y: symbolBBox.y + symbolBBox.height },
+      //   pinPoint: { x: Number(d3SymbolNode.attr('x')) , y: Number(d3SymbolNode.attr('y')) }
+      // }
     }
 
     const rotateAngle = (polar, towrad) => {
@@ -315,13 +320,13 @@ class Radar extends Component {
 
 
         // if (data.sectorIndex !== 1) return
+        const { offsetX, offsetY } = restrictRectWithinArc(rect, arc.startAngle, arc.endAngle, INCREASE_R_DELTA)
 
-
-        // d3.select(symbolNode).attr('x', Number(d3.select(symbolNode).attr('x')) + offsetX)
-        //                      .attr('y', Number(d3.select(symbolNode).attr('y')) + offsetY)
-        //                      .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
-        // d3.select(textNode).attr('x', Number(d3.select(textNode).attr('x')) + offsetX)
-        //                    .attr('y', Number(d3.select(textNode).attr('y')) + offsetY)
+        d3.select(symbolNode).attr('x', Number(d3.select(symbolNode).attr('x')) + offsetX)
+                             .attr('y', Number(d3.select(symbolNode).attr('y')) + offsetY)
+                             .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
+        d3.select(textNode).attr('x', Number(d3.select(textNode).attr('x')) + offsetX)
+                           .attr('y', Number(d3.select(textNode).attr('y')) + offsetY)
 
       })
 
@@ -335,7 +340,7 @@ class Radar extends Component {
         positionTextNextToSymbol()
       } else {
 
-        if(tickCount < 1) {
+        if(tickCount < 100) {
           spreadBlips()
           pullRectBackInArcAndIncreaseR()
         }
