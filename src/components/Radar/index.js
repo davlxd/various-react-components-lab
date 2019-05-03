@@ -8,6 +8,8 @@ import { groupBy } from '../../utils/array'
 import { combineBBoxIntoRect, rectOverlapped, isRectOutOfArc, restrictRectWithinArc, restrictRectWithinArc2 } from './d3/rect-on-coord'
 import { cartesianToPolar, polarToCartesian, } from './d3/polar-and-cartesian'
 
+import forceWithinQuandrant from './d3/force-within-quadrant'
+
 const styles = theme => ({
   root: {
     backgroundColor: '#f3f9fe',
@@ -145,24 +147,11 @@ class Radar extends Component {
   enhanceBlipsData(blips) {
     const { radius } = this
 
-    const blipShapes = [
-      {
-        shapeName: 'rect',
-        shapeTransformation:  null,
-      },
-      {
-        shapeName: 'rect',
-        shapeTransformation:  (x, y) => `rotate(45, ${x}, ${y})`,
-      },
-      {
-        shapeName: 'circle',
-        shapeTransformation: null
-      }
-    ]
+    const blipShapes = [ { shapeName: 'rect', }, { shapeName: 'circle', } ]
 
     const uniqueSectorNames = [...new Set(blips.map(blip => blip.sector))]
     const minAndMaxOfBlipScore = blips.map(blip => blip.score).reduce((acc, cur) => [Math.min(acc[0], cur), Math.max(acc[1], cur)], [Infinity, -Infinity])
-    const scoreToRadiusScale = d3.scaleLinear().domain(minAndMaxOfBlipScore).range([radius, 10])
+    const scoreToRadiusScale = d3.scaleLinear().domain(minAndMaxOfBlipScore).range([radius, 50])
 
     return blips.map(blip => {
       const sectorIndex = uniqueSectorNames.indexOf(blip.sector)
@@ -172,8 +161,8 @@ class Radar extends Component {
         r,
         sectorIndex,
         ...blipShapes[sectorIndex % blipShapes.length],
-        x: Math.sin(Math.PI/4) * r * (sectorIndex < 2 ? 1 : -1),
-        y: Math.sin(Math.PI/4) * r * (sectorIndex > 0 && sectorIndex < 3 ? 1 : -1),
+        x: 0,
+        y: 0,
       }
     })
   }
@@ -200,10 +189,12 @@ class Radar extends Component {
     const color = d3.scaleOrdinal(d3.schemeCategory10)
 
     console.log(this.enhanceBlipsData(blips))
+    const enhancedBlips = this.enhanceBlipsData(blips)
+
     const eachBlip = g.append('g')
                       .attr('class', 'blips')
                       .selectAll('g.blip')
-                      .data(this.enhanceBlipsData(blips))
+                      .data(enhancedBlips)
                       .enter()
                         .append('g')
                         .attr('class', 'blip')
@@ -213,173 +204,32 @@ class Radar extends Component {
     const eachBlipSymbol = eachBlip.append(d => document.createElementNS(d3.namespaces.svg, d.shapeName))
                                    .attr('class', 'blip-element blip-symbol')
                                    .style('fill', d => color(d.sectorIndex))
-                                   .attr('width', 24)
-                                   .attr('height', 24)
+                                   .attr('width', 22)
+                                   .attr('height', 22)
                                    .attr('r', 12)
-                                   .attr('x', d => d.x - 12)
-                                   .attr('y', d => d.y - 12) // For rect, (x, y) represents coordinate of top-left corner, so with width/height = 24, we make adjustments
                                    .attr('rx', '0.4em')
                                    .attr('ry', '0.4em')
-                                   .attr('cx', d => d.x)
-                                   .attr('cy', d => d.y)
-                                   .attr('transform', d => d.shapeTransformation && d.shapeTransformation(d.x, d.y))
 
     const eachBlipText = eachBlip.append('text')
                                  .attr('class', 'blip-element blip-text')
-                                 .attr('x', d => d.x)
-                                 .attr('y', d => d.y)
                                  .text(d => d.name)
 
-   this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
-  }
-
-
-  distributeBlips(eachBlipSymbol, eachBlipText, arcs) {
-    const simulation = d3.forceSimulation().alphaDecay(0.1)
-
-    const positionTextNextToSymbol = () => {
-      eachBlipText.nodes().forEach((node, index) => {
-        const symboleNode = eachBlipSymbol.nodes()[index]
-        const d3node = d3.select(node)
-        const data = d3node.data()[0]
-        if (data.sectorIndex === 0 || data.sectorIndex === 1) { //TODO not necessarily 4 sectors
-          d3node.attr('x', Number(d3node.attr('x')) + symboleNode.getBBox().width / 2)
-        } else {
-          d3node.attr('x', Number(d3node.attr('x')) - node.getBBox().width - symboleNode.getBBox().width / 2 - 2)
-        }
-        if (data.sectorIndex === 1 || data.sectorIndex === 2) {
-          d3node.attr('y', Number(d3node.attr('y')) + node.getBBox().height / 2)
-        }
-      })
-    }
-
-    const blipRect = (symbolNode, textNode) => {
-      const d3SymbolNode = d3.select(symbolNode)
-
-      const textBBox = textNode.getBBox()
-      const symbolBBox = symbolNode.getBBox()
-      symbolBBox.x = symbolBBox.x + Number(d3SymbolNode.attr('x'))
-      symbolBBox.y = symbolBBox.y + Number(d3SymbolNode.attr('y'))
-      return combineBBoxIntoRect(textBBox, symbolBBox, { x: Number(d3SymbolNode.attr('x')) , y: Number(d3SymbolNode.attr('y')) })
-      // return {
-      //   topLeft: symbolBBox,
-      //   bottomRight: { x: symbolBBox.x + symbolBBox.width, y: symbolBBox.y + symbolBBox.height },
-      //   pinPoint: { x: Number(d3SymbolNode.attr('x')) , y: Number(d3SymbolNode.attr('y')) }
-      // }
-    }
-
-    const rotateAngle = (polar, towrad) => {
-      const SPREAD_ARC_LENGTH = 30
-
-      let newAngle
-      if (towrad === 'decrease') {
-        newAngle = polar.angle - (SPREAD_ARC_LENGTH / polar.r)
-        if (newAngle < 0) {
-          newAngle = newAngle + Math.PI * 2
-        }
-      }
-      if (towrad === 'increase') {
-        newAngle = polar.angle + (SPREAD_ARC_LENGTH / polar.r)
-        if (newAngle >= Math.PI) {
-          newAngle = newAngle - Math.PI * 2
-        }
-      }
-      return newAngle
-    }
-
-    const spreadBlips = () => {
-      const symbolsAndTexts = eachBlipSymbol.nodes().map((symbolNode, index) => ({ symbolNode, textNode: eachBlipText.nodes()[index] }))
-
-      symbolsAndTexts.forEach(({ symbolNode, textNode }) => {
-        const data = d3.select(symbolNode).data()[0]
-        symbolsAndTexts.filter(({ symbolNode: symbolNode1, }) => {
-          const data1 = d3.select(symbolNode1).data()[0]
-          return data.sector === data1.sector && data.name !== data1.name
-        }).forEach(({ symbolNode: symbolNode1, textNode: textNode1 }) => {
-          const data1 = d3.select(symbolNode1).data()[0]
-
-
-          // if (data.sectorIndex !== 1) return
-
-
-          const rect = blipRect(symbolNode, textNode)
-          const rect1 = blipRect(symbolNode1, textNode1)
-          if (!rectOverlapped(rect, rect1)) {
-            return
-          }
-          const polar = cartesianToPolar(rect.pinPoint.x, rect.pinPoint.y)
-          const polar1 = cartesianToPolar(rect1.pinPoint.x, rect1.pinPoint.y)
-          // console.log('polar', data.name, polar, data1.name, polar1)
-          const rectShouldDecrease = (polar.angle <= polar1.angle && (polar1.angle - polar.angle < Math.PI)) ||  (polar.angle > polar1.angle && (polar.angle - polar1.angle > Math.PI))
-          // console.log('rectShouldDecrease', data.name, rectShouldDecrease)
-
-          const newCartesian = polarToCartesian( rotateAngle(polar, rectShouldDecrease ? 'decrease' : 'increase'), polar.r )
-          const newCartesian1 = polarToCartesian( rotateAngle(polar1, rectShouldDecrease ? 'increase' : 'decrease'), polar1.r )
-          const offset = { x: newCartesian.x - rect.pinPoint.x, y: newCartesian.y - rect.pinPoint.y}
-          const offset1 = { x: newCartesian1.x - rect1.pinPoint.x, y: newCartesian1.y - rect1.pinPoint.y}
-
-          // console.log('offset for', data.name, offset, 'offset for', data1.name, offset1)
-          d3.select(symbolNode).attr('x', Number(d3.select(symbolNode).attr('x')) + offset.x)
-                               .attr('y', Number(d3.select(symbolNode).attr('y')) + offset.y)
-                               // .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
-          d3.select(textNode).attr('x', Number(d3.select(textNode).attr('x')) + offset.x)
-                             .attr('y', Number(d3.select(textNode).attr('y')) + offset.y)
-
-          d3.select(symbolNode1).attr('x', Number(d3.select(symbolNode1).attr('x')) + offset1.x)
-                                .attr('y', Number(d3.select(symbolNode1).attr('y')) + offset1.y)
-                                // .attr('transform', `translate(${Number(d3.select(symbolNode1).attr('x'))}, ${ Number(d3.select(symbolNode1).attr('y'))})`)
-          d3.select(textNode1).attr('x', Number(d3.select(textNode1).attr('x')) + offset1.x)
-                              .attr('y', Number(d3.select(textNode1).attr('y')) + offset1.y)
-
-        })
-      })
-
-    }
-
-    const pullRectBackInArcAndIncreaseR = () => {
-      const INCREASE_R_DELTA = 30
-
-      const symbolsAndTexts = eachBlipSymbol.nodes().map((symbolNode, index) => ({ symbolNode, textNode: eachBlipText.nodes()[index] }))
-
-      symbolsAndTexts.forEach(({ symbolNode, textNode }) => {
-        const rect = blipRect(symbolNode, textNode)
-        const data = d3.select(symbolNode).data()[0]
-        const arc = arcs[data.sectorIndex]
-        if (!isRectOutOfArc(rect, arc.startAngle, arc.endAngle)) {
-          return
-        }
-
-
-        // if (data.sectorIndex !== 1) return
-        const { offsetX, offsetY } = restrictRectWithinArc(rect, arc.startAngle, arc.endAngle, INCREASE_R_DELTA)
-
-        d3.select(symbolNode).attr('x', Number(d3.select(symbolNode).attr('x')) + offsetX)
-                             .attr('y', Number(d3.select(symbolNode).attr('y')) + offsetY)
-                             // .attr('transform', `translate(${Number(d3.select(symbolNode).attr('x'))}, ${ Number(d3.select(symbolNode).attr('y'))})`)
-        d3.select(textNode).attr('x', Number(d3.select(textNode).attr('x')) + offsetX)
-                           .attr('y', Number(d3.select(textNode).attr('y')) + offsetY)
-
-      })
-
+    const positionSymbolAndText = () => {
+      eachBlipSymbol.attr('x', d => d.x - 11)
+                    .attr('y', d => d.y - 11)  // For rect, (x, y) represents coordinate of top-left corner, so with width/height = 24, we make adjustments
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y)
+      eachBlipText.attr('x',d => d.x)
+                    .attr('y', d => d.y)
+      this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
     }
 
 
-    let tickCount = 0
-    simulation.on('tick',  e => {
-      console.log('--- tick', tickCount)
-      if (tickCount === 0) {
-        positionTextNextToSymbol()
-      } else {
-
-        if(tickCount < 100) {
-          spreadBlips()
-          pullRectBackInArcAndIncreaseR()
-        }
-
-      }
-      tickCount++
-    })
-
+    const simulation = d3.forceSimulation(enhancedBlips)
+                         .force('radial', d3.forceRadial(d => d.r))
+                         .force('in-quandrant', forceWithinQuandrant())
+                         .force('collide', d3.forceCollide(d => 30))
+                         .on('tick', positionSymbolAndText)
   }
 
 
@@ -387,7 +237,6 @@ class Radar extends Component {
     const { svg, g } = this.initateSvg()
     const { arcs } = this.drawBackgroundCirclesAndAxis(svg, g)
     this.drawBlips(svg, g, arcs)
-    // this.distributeBlips(eachBlipSymbol, eachBlipText, arcs)
   }
 
   componentWillMount() {

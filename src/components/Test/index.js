@@ -33,8 +33,8 @@ class Test extends Component {
 
             { sector: 'Sightworthy', name: 'Illustration', score: 8 },
             { sector: 'Sightworthy', name: 'Silkworms', score: 8 },
-            // { sector: 'Sightworthy', name: 'Raising', score: 7 },
-            { sector: 'Sightworthy', name: 'Organisms', score: 5 },
+            { sector: 'Sightworthy', name: 'Raising', score: 7 },
+            { sector: 'Sightworthy', name: 'Organisms', score: 7 },
             { sector: 'Sightworthy', name: 'Swimming', score: 8 },
             { sector: 'Sightworthy', name: 'Reference', score: 8 },
 
