@@ -224,7 +224,6 @@ class Radar extends Component {
       this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
     }
 
-
     const simulation = d3.forceSimulation(enhancedBlips)
                          .force('radial', d3.forceRadial(d => d.r))
                          .force('in-quandrant', forceWithinQuandrant())
