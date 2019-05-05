@@ -9,6 +9,7 @@ import { combineBBoxIntoRect, rectOverlapped, isRectOutOfArc, restrictRectWithin
 import { cartesianToPolar, polarToCartesian, } from './d3/polar-and-cartesian'
 
 import forceWithinQuandrant from './d3/force-within-quadrant'
+import forceBlipCollide from './d3/force-blip-collide'
 
 const styles = theme => ({
   root: {
@@ -227,7 +228,8 @@ class Radar extends Component {
     const simulation = d3.forceSimulation(enhancedBlips)
                          .force('radial', d3.forceRadial(d => d.r))
                          .force('in-quandrant', forceWithinQuandrant())
-                         .force('collide', d3.forceCollide(d => 30))
+                         .force('collide',forceBlipCollide(d => 30))
+                         // .force('collide', d3.forceCollide(d => 30))
                          .on('tick', positionSymbolAndText)
   }
 

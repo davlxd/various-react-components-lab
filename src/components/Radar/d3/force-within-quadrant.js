@@ -1,7 +1,7 @@
-export default function() {
+export default () => {
   let nodes
   const BOUNDARY_PADDING = 12
-  function force() {
+  const force = () => {
     nodes.forEach(node => {
       const sectorIndex = node.sectorIndex
       if (sectorIndex === 0 ) {
@@ -20,9 +20,7 @@ export default function() {
     })
   }
 
-  force.initialize = function(_) {
-    nodes = _
-  }
+  force.initialize = (_) => nodes = _
 
   return force
 }
