@@ -8,13 +8,13 @@ const x = d => d.x + d.vx
 const y = d => d.y + d.vy
 
 
-export default function(radius) {
+export default function(padding) {
   var nodes,
       radii,
       strength = 1,
       iterations = 1;
 
-  if (typeof radius !== "function") radius = constant(radius == null ? 1 : +radius);
+  if (typeof padding !== "function") padding = constant(padding == null ? [30, 30, 30, 30] : padding);
 
   function force() {
     var i, n = nodes.length, tree, node, xi, yi, ri, ri2;
@@ -72,10 +72,11 @@ export default function(radius) {
   function initialize() {
     if (!nodes) return;
     var i, n = nodes.length, node;
+    // radii = nodes.map(node => padding(node, i, nodes))
     radii = new Array(n);
     for (i = 0; i < n; ++i) {
        node = nodes[i]
-       radii[node.index] = +radius(node, i, nodes)
+       radii[node.index] = +padding(node, i, nodes)
     }
   }
 
@@ -92,8 +93,8 @@ export default function(radius) {
     return arguments.length ? (strength = +_, force) : strength;
   };
 
-  force.radius = function(_) {
-    return arguments.length ? (radius = typeof _ === "function" ? _ : constant(+_), initialize(), force) : radius;
+  force.padding = function(_) {
+    return arguments.length ? (padding = typeof _ === "function" ? _ : constant(_), initialize(), force) : padding;
   };
 
   return force;

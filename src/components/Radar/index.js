@@ -225,10 +225,26 @@ class Radar extends Component {
       this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
     }
 
+    const blipPadding = ({ sectorIndex }, i) => {
+      const symbolBBox = eachBlipSymbol.nodes()[i].getBBox()
+      const textBBox = eachBlipText.nodes()[i].getBBox()
+
+      return [
+        symbolBBox.height/2,
+        (sectorIndex === 0 || sectorIndex === 1 ? symbolBBox.width/2 + textBBox.width : symbolBBox.width/2),
+        symbolBBox.height/2,
+        (sectorIndex === 0 || sectorIndex === 1 ? symbolBBox.width/2 : symbolBBox.width/2 + textBBox.width),
+      ]
+    }
+
     const simulation = d3.forceSimulation(enhancedBlips)
                          .force('radial', d3.forceRadial(d => d.r))
                          .force('in-quandrant', forceWithinQuandrant())
-                         .force('collide',forceBlipCollide(d => 30))
+                         .force('collide',forceBlipCollide((d, i) => {
+                           const padding = blipPadding(d, i)
+                           console.log(d.name, padding)
+                           return 30
+                         }))
                          // .force('collide', d3.forceCollide(d => 30))
                          .on('tick', positionSymbolAndText)
   }
