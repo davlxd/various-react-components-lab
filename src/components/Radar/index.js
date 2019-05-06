@@ -242,8 +242,8 @@ class Radar extends Component {
                          .force('in-quandrant', forceWithinQuandrant())
                          .force('collide',forceBlipCollide((d, i) => {
                            const padding = blipPadding(d, i)
-                           console.log(d.name, padding)
-                           return 30
+                           // console.log(d.name, padding)
+                           return padding
                          }))
                          // .force('collide', d3.forceCollide(d => 30))
                          .on('tick', positionSymbolAndText)
