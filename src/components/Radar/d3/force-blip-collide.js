@@ -17,7 +17,7 @@ export default function(padding) {
   if (typeof padding !== "function") padding = constant(padding == null ? [30, 30, 30, 30] : padding);
 
   function force() {
-    var i, n = nodes.length, tree, node, xi, yi, ri, ri2;
+    var i, n = nodes.length, tree, node, xi, yi, ri, ri2, massi;
 
     for (var k = 0; k < iterations; ++k) {
       tree = quadtree(nodes, x, y).visitAfter(prepare);
@@ -27,38 +27,45 @@ export default function(padding) {
         // ri2 = ri * ri;
         xi = node.x + node.vx;
         yi = node.y + node.vy;
+        massi = (ri[0] + ri[2]) * (ri[1] + ri[3])
         tree.visit(apply);
       }
     }
 
     function apply(quad, x0, y0, x1, y1) {
-      var data = quad.data, rj = quad.r, r = ri + rj;  // adjcent disance
+      var data = quad.data, rj = quad.r;
+      const massj = (rj[0] + rj[2]) * (rj[1] + rj[3])
       if (data) {
         if (data.index > node.index) {
+          // console.log('collide detected', data.name, node.name)
           var x = xi - data.x - data.vx, // distance on x axis, positive if node is right of quad
               y = yi - data.y - data.vy, // distance on y axis, positive if node is downer than quad
-              l = x * x + y * y;  // square of distance
-          if (l < r * r) {
+              l;
+          const rx = x >= 0 ? ri[3] + rj[1] : ri[1] + rj[3] // adjcent disance
+          const ry = y >= 0 ? ri[0] + rj[2] : ri[2] + rj[0] // adjcent disance
+          const massRatio = massj / (massi + massj) // mass ratio, the heavier, the less to move
+          if (Math.abs(x) < rx) {
             if (x === 0) {
               x = jiggle()
-              l += x * x
             }
+            l = (rx - Math.abs(x)) / Math.abs(x) * strength; // distance delta ratio (with current distance)
+            node.vx += (x * l) * massRatio;
+            data.vx -= (x * l) * (1 - massRatio);
+          }
+
+          if (Math.abs(y) < ry) {
             if (y === 0) {
                y = jiggle()
-               l += y * y
             }
-            l = (r - (l = Math.sqrt(l))) / l * strength; // distance delta ratio (with current distance)
-            r = (rj * rj) / (ri * ri + rj * rj)  // mass ratio, the heavier, the less to move
-            node.vx += (x * l) * r;
-            node.vy += (y * l) * r;
-            data.vx -= (x * l) * (1 - r);
-            data.vy -= (y * l) * (1 - r);
+            l = (ry - Math.abs(y)) / Math.abs(y) * strength; // distance delta ratio (with current distance)
+            node.vy += (y * l) * massRatio;
+            data.vy -= (y * l) * (1 - massRatio);
           }
         }
         return;
       }
       // return x0 > xi + r || x1 < xi - r || y0 > yi + r || y1 < yi - r;
-      return x0 - rj[3] > xi + r[1] || x1 + rj[1] < xi - r[3] || y0 - rj[0] > yi + r[2] || y1 + rj[2] < yi - r[0];
+      return x0 - rj[3] > xi + ri[1] || x1 + rj[1] < xi - ri[3] || y0 - rj[0] > yi + ri[2] || y1 + rj[2] < yi - ri[0];
     }
   }
 
@@ -74,11 +81,11 @@ export default function(padding) {
     // }
 
     // otherwise, r becomes into coordinate of top, right, down, left (absolute position)
-    quad.r = [Infinity, -Infinity, -Infinity, Infinity]
+    quad.r = [0, 0, 0, 0]
     for (let i = 0; i < 4; ++i) { // children
       if (!quad[i]) continue
       for (let j = 0; j < 4; ++j) {
-        quad.r[j] = Math.min(quad.r[j], quad[i].r[j])
+        quad.r[j] = Math.max(quad.r[j], quad[i].r[j])
       }
     }
   }
