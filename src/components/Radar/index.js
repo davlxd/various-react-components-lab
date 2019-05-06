@@ -9,6 +9,8 @@ import { combineBBoxIntoRect, rectOverlapped, isRectOutOfArc, restrictRectWithin
 import { cartesianToPolar, polarToCartesian, } from './d3/polar-and-cartesian'
 
 import forceWithinQuandrant from './d3/force-within-quadrant'
+import forceCollide from './d3/force-blip-collide0'
+import forceCollideOld from './d3/force-blip-collide1'
 import forceBlipCollide from './d3/force-blip-collide'
 
 const styles = theme => ({
@@ -225,6 +227,19 @@ class Radar extends Component {
       this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
     }
 
+    const positionSymbolAndTextCentral = () => {
+      const symbolBBox = i => eachBlipSymbol.nodes()[i].getBBox()
+      const textBBox = i => eachBlipText.nodes()[i].getBBox()
+
+      eachBlipSymbol.attr('x', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 1 ? d.x - (symbolBBox(i).width + textBBox(i).width) / 2 : d.x + (textBBox(i).width - symbolBBox(i).width) / 2)
+                    .attr('y', (d, i) => d.y - symbolBBox(i).height / 2)
+                    .attr('cx', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 1 ? d.x - textBBox(i).width / 2 : d.x + textBBox(i).width / 2)
+                    .attr('cy', d => d.y)
+      eachBlipText.attr('x', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 1 ? d.x - (textBBox(i).width - symbolBBox(i).width) / 2 : d.x - (textBBox(i).width + symbolBBox(i).width) / 2)
+                    .attr('y', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 3 ? d.y : d.y + textBBox(i).height / 2)
+      // this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
+    }
+
     const blipPadding = ({ sectorIndex }, i) => {
       const symbolBBox = eachBlipSymbol.nodes()[i].getBBox()
       const textBBox = eachBlipText.nodes()[i].getBBox()
@@ -237,15 +252,28 @@ class Radar extends Component {
       ]
     }
 
+    const blipPaddingCentral = ({ sectorIndex }, i) => {
+      const symbolBBox = eachBlipSymbol.nodes()[i].getBBox()
+      const textBBox = eachBlipText.nodes()[i].getBBox()
+
+      return [
+        (symbolBBox.width + textBBox.width) / 2,
+        symbolBBox.height/2,
+      ]
+    }
+
     const simulation = d3.forceSimulation(enhancedBlips)
                          .force('radial', d3.forceRadial(d => d.r))
                          .force('in-quandrant', forceWithinQuandrant())
-                         .force('collide',forceBlipCollide((d, i) => {
-                           const padding = blipPadding(d, i)
-                           // console.log(d.name, padding)
-                           return padding
-                         }))
-                         // .force('collide', d3.forceCollide(d => 30))
+                         // .force('collide',forceBlipCollide((d, i) => {
+                         //   const padding = blipPadding(d, i)
+                         //   // console.log(d.name, padding)
+                         //   return padding
+                         //   // return Math.max(...padding)
+                         // }))
+                         .force('collide', ellipseCollide().radius((d, i) => blipPadding(d, i)))
+                         // .force('collide',forceCollide(d => 40))
+                         // .force('collide',forceCollide((d, i) => Math.max(...blipPadding(d, i))))
                          .on('tick', positionSymbolAndText)
   }
 
