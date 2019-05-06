@@ -227,39 +227,23 @@ class Radar extends Component {
       this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
     }
 
-    const positionSymbolAndTextCentral = () => {
-      const symbolBBox = i => eachBlipSymbol.nodes()[i].getBBox()
-      const textBBox = i => eachBlipText.nodes()[i].getBBox()
+    const addFakeCircleForRadialCollideForce = blips => {
+      return blips.flatMap((blip, index) => {
+        const blipSymbolBBox = eachBlipSymbol.nodes()[index].getBBox()
+        const blipTextBBox = eachBlipText.nodes()[index].getBBox()
+        blip.radius = Math.max(blipSymbolBBox.width, blipSymbolBBox.height)
 
-      eachBlipSymbol.attr('x', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 1 ? d.x - (symbolBBox(i).width + textBBox(i).width) / 2 : d.x + (textBBox(i).width - symbolBBox(i).width) / 2)
-                    .attr('y', (d, i) => d.y - symbolBBox(i).height / 2)
-                    .attr('cx', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 1 ? d.x - textBBox(i).width / 2 : d.x + textBBox(i).width / 2)
-                    .attr('cy', d => d.y)
-      eachBlipText.attr('x', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 1 ? d.x - (textBBox(i).width - symbolBBox(i).width) / 2 : d.x - (textBBox(i).width + symbolBBox(i).width) / 2)
-                    .attr('y', (d, i) => d.sectorIndex === 0 || d.sectorIndex === 3 ? d.y : d.y + textBBox(i).height / 2)
-      // this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
-    }
 
-    const blipPadding = ({ sectorIndex }, i) => {
-      const symbolBBox = eachBlipSymbol.nodes()[i].getBBox()
-      const textBBox = eachBlipText.nodes()[i].getBBox()
-
-      return [
-        symbolBBox.height/2,
-        (sectorIndex === 0 || sectorIndex === 1 ? symbolBBox.width/2 + textBBox.width : symbolBBox.width/2),
-        symbolBBox.height/2,
-        (sectorIndex === 0 || sectorIndex === 1 ? symbolBBox.width/2 : symbolBBox.width/2 + textBBox.width),
-      ]
-    }
-
-    const blipPaddingCentral = ({ sectorIndex }, i) => {
-      const symbolBBox = eachBlipSymbol.nodes()[i].getBBox()
-      const textBBox = eachBlipText.nodes()[i].getBBox()
-
-      return [
-        (symbolBBox.width + textBBox.width) / 2,
-        symbolBBox.height/2,
-      ]
+        return [
+          blip,
+          ...[...Array(Math.ceil(blipTextBBox.width / blipTextBBox.height)).keys()].map(nthForBlip => ({
+            dad: blip,
+            radius: blipTextBBox.height,
+            x: 0,
+            y: 0,
+          }))
+        ]
+      })
     }
 
     const simulation = d3.forceSimulation(enhancedBlips)
@@ -271,10 +255,19 @@ class Radar extends Component {
                          //   return padding
                          //   // return Math.max(...padding)
                          // }))
-                         .force('collide', ellipseCollide().radius((d, i) => blipPadding(d, i)))
-                         // .force('collide',forceCollide(d => 40))
+                         // .force('collide',forceCollide(d => d.radius))
+                         // .force('collide',forceCollide(d => 30))
                          // .force('collide',forceCollide((d, i) => Math.max(...blipPadding(d, i))))
                          .on('tick', positionSymbolAndText)
+
+    const withFakeCircles = addFakeCircleForRadialCollideForce(enhancedBlips)
+    console.log(withFakeCircles)
+
+    const simulation2 = d3.forceSimulation(withFakeCircles)
+                         .force('collide', forceCollide(d => d.radius))
+                         .force('position-fake', forceOfFakeCircles(d => d.radius))
+                         .on('tick', positionSymbolAndText)
+    console.log(withFakeCircles)
   }
 
 
