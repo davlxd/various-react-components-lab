@@ -5,13 +5,8 @@ import * as d3 from 'd3'
 
 import { groupBy } from '../../utils/array'
 
-import { combineBBoxIntoRect, rectOverlapped, isRectOutOfArc, restrictRectWithinArc, restrictRectWithinArc2 } from './d3/rect-on-coord'
-import { cartesianToPolar, polarToCartesian, } from './d3/polar-and-cartesian'
-
 import forceWithinQuandrant from './d3/force-within-quadrant'
-import forceCollide from './d3/force-blip-collide0'
-import forceCollideOld from './d3/force-blip-collide1'
-import forceBlipCollide from './d3/force-blip-collide'
+import forcePlaceholdingCirclesTailingDad from './d3/force-placeholding-circles-tailing-dad'
 
 const styles = theme => ({
   root: {
@@ -170,22 +165,6 @@ class Radar extends Component {
     })
   }
 
-  positionTextNextToSymbol(eachBlipSymbol, eachBlipText){
-    eachBlipText.nodes().forEach((node, index) => {
-      const symboleNode = eachBlipSymbol.nodes()[index]
-      const d3node = d3.select(node)
-      const data = d3node.data()[0]
-      if (data.sectorIndex === 0 || data.sectorIndex === 1) {
-        d3node.attr('x', Number(d3node.attr('x')) + symboleNode.getBBox().width / 2)
-      } else {
-        d3node.attr('x', Number(d3node.attr('x')) - node.getBBox().width - symboleNode.getBBox().width / 2 - 2)
-      }
-      if (data.sectorIndex === 1 || data.sectorIndex === 2) {
-        d3node.attr('y', Number(d3node.attr('y')) + node.getBBox().height / 2)
-      }
-    })
-  }
-
   drawBlips(svg, g, arcs) {
     const { misc, blips } = this.props.data
 
@@ -217,57 +196,64 @@ class Radar extends Component {
                                  .attr('class', 'blip-element blip-text')
                                  .text(d => d.name)
 
+    const blipSymbolBBox = index => eachBlipSymbol.nodes()[index].getBBox()
+    const blipTextBBox = index => eachBlipText.nodes()[index].getBBox()
+
     const positionSymbolAndText = () => {
-      eachBlipSymbol.attr('x', d => d.x - 11)
-                    .attr('y', d => d.y - 11)  // For rect, (x, y) represents coordinate of top-left corner, so with width/height = 24, we make adjustments
-                    .attr('cx', d => d.x)
-                    .attr('cy', d => d.y)
-      eachBlipText.attr('x',d => d.x)
-                    .attr('y', d => d.y)
-      this.positionTextNextToSymbol(eachBlipSymbol, eachBlipText)
-    }
+      eachBlipSymbol.attr('x', ({ x }, i) => x - blipSymbolBBox(i).width / 2)
+                    .attr('y', ({ y }, i) => y - blipSymbolBBox(i).height / 2)
+                    .attr('cx', ({ x }) => x)
+                    .attr('cy', ({ y }) => y)
 
-    const addFakeCircleForRadialCollideForce = blips => {
-      return blips.flatMap((blip, index) => {
-        const blipSymbolBBox = eachBlipSymbol.nodes()[index].getBBox()
-        const blipTextBBox = eachBlipText.nodes()[index].getBBox()
-        blip.radius = Math.max(blipSymbolBBox.width, blipSymbolBBox.height)
+      eachBlipText.attr('x', ({ sectorIndex, x }, i) => (sectorIndex === 0 || sectorIndex === 1) ? (x + blipSymbolBBox(i).width / 2) : (x - blipTextBBox(i).width - blipSymbolBBox(i).width / 2))
+                  .attr('y', ({ sectorIndex, y }, i) => (sectorIndex === 1 || sectorIndex === 2) ? (y + blipTextBBox(i).height / 2) : y)
 
-
-        return [
-          blip,
-          ...[...Array(Math.ceil(blipTextBBox.width / blipTextBBox.height)).keys()].map(nthForBlip => ({
-            dad: blip,
-            radius: blipTextBBox.height,
-            x: 0,
-            y: 0,
-          }))
-        ]
-      })
+      eachPlaceholdingCircle.attr('cx', ({ x }) => x)
+                            .attr('cy', ({ y }) => y)
     }
 
     const simulation = d3.forceSimulation(enhancedBlips)
                          .force('radial', d3.forceRadial(d => d.r))
                          .force('in-quandrant', forceWithinQuandrant())
-                         // .force('collide',forceBlipCollide((d, i) => {
-                         //   const padding = blipPadding(d, i)
-                         //   // console.log(d.name, padding)
-                         //   return padding
-                         //   // return Math.max(...padding)
-                         // }))
-                         // .force('collide',forceCollide(d => d.radius))
-                         // .force('collide',forceCollide(d => 30))
-                         // .force('collide',forceCollide((d, i) => Math.max(...blipPadding(d, i))))
                          .on('tick', positionSymbolAndText)
+                         .alphaDecay(0.01)
 
-    const withFakeCircles = addFakeCircleForRadialCollideForce(enhancedBlips)
-    console.log(withFakeCircles)
+    const BLIP_COLLIDE_RADIUS_MARGIN = 10
+    const addPlaceholdingCircleForRadialCollideForce = blips => blips.flatMap((blip, index) => {
+      blip.radius = Math.max(blipSymbolBBox(index).width, blipSymbolBBox(index).height) / 2 + BLIP_COLLIDE_RADIUS_MARGIN
+      return [
+        blip,
+        ...[...Array(Math.floor(blipTextBBox(index).width / blipTextBBox(index).height)).keys()].map(nthForBlip => ({
+          dad: blip,
+          isPlaceholder: true,
+          nth: nthForBlip,
+          radius: blipTextBBox(index).height / 2 ,
+          x: 0,
+          y: 0,
+        }))
+      ]
+    })
+    const withPlaceholdingCircles = addPlaceholdingCircleForRadialCollideForce(enhancedBlips)
 
-    const simulation2 = d3.forceSimulation(withFakeCircles)
-                         .force('collide', forceCollide(d => d.radius))
-                         .force('position-fake', forceOfFakeCircles(d => d.radius))
+    const eachPlaceholdingCircle = g.select('g.blips').selectAll('g.fake-circle')
+                                                      .data(withPlaceholdingCircles.filter(d => d.isPlaceholder))
+                                                      .enter()
+                                                        .append('g')
+                                                        .attr('class', 'fake-circle')
+                                                        .append('circle')
+                                                        .attr('r', d => d.radius)
+                                                        .attr('cx', d => d.x)
+                                                        .attr('cy', d => d.x)
+                                                        .attr('fill-opacity', 0)
+                                                        .attr('stroke', '#000000')
+                                                        .attr('stroke-opacity', 0.1)
+                                                        .attr('dad-name', d => d.dad.name)
+
+    const simulation2 = d3.forceSimulation(withPlaceholdingCircles)
+                         .force('collide', d3.forceCollide(d => d.radius).strength(0.9))
+                         .force('position-placeholding-circles', forcePlaceholdingCirclesTailingDad())
                          .on('tick', positionSymbolAndText)
-    console.log(withFakeCircles)
+                         .alphaDecay(0.01)
   }
 
 
