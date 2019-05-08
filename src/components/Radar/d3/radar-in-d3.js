@@ -54,6 +54,7 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips) => {
                                  .append('g')
                                  .attr('class', (d, i) => `sector-${i}`)
 
+
   sectorG.selectAll('path')
          .data((d, i) => [{d, i}, {d, i}, {d, i}])
          .enter().append('path')
@@ -89,6 +90,22 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips) => {
            //   .attr('x', d => d.initialX(d.radius))
            //   .attr('y', d => d.initialY(d.radius))
          })
+
+  const eachSectorLabel = g.append('g').attr('class', 'sector-label')
+                                       .selectAll('rect')
+                                       .data(sectorNames)
+                                       .enter()
+                                         .append('text')
+                                         .attr('x', (d, i) => Math.sin(Math.PI/4) * radius * (i === 0 || i === 1 ? 1 : -1))
+                                         .attr('y', (d, i) => Math.sin(Math.PI/4) * radius * (i === 1 || i === 2 ? 1 : -1))
+                                         .attr('font-size', '1.3em')
+                                         .attr('font-weight', 200)
+                                         .text(d => d.toUpperCase())
+
+  const sectorLabelBBox = index => eachSectorLabel.nodes()[index].getBBox()
+
+  eachSectorLabel.attr('dx', (d, i) =>  (i === 0 || i === 1 ? 0 : -sectorLabelBBox(i).width))
+  eachSectorLabel.attr('dy', (d, i) =>  (i === 0 || i === 3 ? 0 : 0.5 * sectorLabelBBox(i).height))
 }
 
 
