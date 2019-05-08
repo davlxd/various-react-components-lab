@@ -19,7 +19,7 @@ const initateSvg = (divId, svgId, width, height) => {
 }
 
 
-const drawBackgroundCirclesAndAxis = (svg, g, radius, blips) => {
+const drawBackgroundCirclesAndAxis = (svg, g, radius, blips, hoverOnHalf) => {
   const sectorNames = [...new Set(blips.map(blip => blip.sector))]
   const sectorCount = sectorNames.length
 
@@ -67,6 +67,7 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips) => {
                     .transition().duration('200')
                     .attr('d', ({ d }, i) => arcConfig(i, true)(d) )
                     .style('fill-opacity', (d, i) => (1 - 0.2 * i))
+           hoverOnHalf(i === 0 || i === 1 ? 'right' : 'left')
            // g.selectAll(`.blips-in-sector-${i} .blip-symbol`)
            //   .transition().duration('200')
            //   .attr('cx', function(){ return newBlipCoordinatesOnFocus(d3.select(this).attr('cx'), d3.select(this).attr('cy')).x })
@@ -130,7 +131,7 @@ const enhanceBlipsData = (radius, blips) => {
   })
 }
 
-const drawBlips = (svg, g, radius, blips) => {
+const drawBlips = (svg, g, radius, blips, hoverOnHalf) => {
   const color = d3.scaleOrdinal(d3.schemeCategory10)
   const enhancedBlips = enhanceBlipsData(radius, blips)
 
@@ -143,6 +144,9 @@ const drawBlips = (svg, g, radius, blips) => {
                       .attr('class', 'blip')
                       .attr('sector-name', d => d.sector)
                       .attr('sector-index', d => d.sectorIndex)
+                      .on('mouseover', ({ sectorIndex }) => {
+                        hoverOnHalf(sectorIndex === 0 || sectorIndex === 1 ? 'right' : 'left')
+                      })
 
   const eachBlipSymbol = eachBlip.append(d => document.createElementNS(d3.namespaces.svg, d.shapeName))
                                  .attr('class', 'blip-element blip-symbol')

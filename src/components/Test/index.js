@@ -39,9 +39,17 @@ class Test extends Component {
             { sector: 'Sightworthy', name: 'Swimming', score: 8 },
             { sector: 'Sightworthy', name: 'Reference', score: 8 },
 
-            { sector: 'whicker', name: 'planet ', score: 7 },
+            { sector: 'whicker', name: 'planet ', score: 7, desc: 'em ipsum dolor sit amet, consectetur ad' },
             { sector: 'whicker', name: 'Docker', score: 8 },
             { sector: 'whicker', name: 'Planet Earth Lambda', score: 8 },
+            { sector: 'whicker', name: 'Planet Mars', score: 8 },
+            { sector: 'whicker', name: 'planet ', score: 7 },
+            { sector: 'whicker', name: 'Docker', score: 8 },
+            { sector: 'whicker', name: 'Planet Earth La', score: 8 },
+            { sector: 'whicker', name: 'Planet Mars', score: 8 },
+            { sector: 'whicker', name: 'planet ', score: 7 },
+            { sector: 'whicker', name: 'Docker', score: 8 },
+            { sector: 'whicker', name: 'Planet Earthda', score: 8 },
             { sector: 'whicker', name: 'Planet Mars', score: 8 },
 
             { sector: 'UPAS', name: 'XO', score: 8, desc: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit'},

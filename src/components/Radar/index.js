@@ -18,7 +18,16 @@ const styles = theme => ({
     display: 'flex',
     flexDirection: 'column',
     height: RADAR_HEIGHT,
-    minWidth: RADAR_WIDTH / 2, // this guarantees left one doesn't overflow into svg
+    transition: 'width 0.2s ease-out',
+    width: RADAR_WIDTH / 2, // this guarantees left one doesn't overflow into svg
+  },
+  detailColumnCollapsed: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: RADAR_HEIGHT,
+    transition: 'width 0.2s ease-out',
+    overflow: 'hidden',
+    width: 0,
   },
 })
 
@@ -31,6 +40,11 @@ class Radar extends Component {
     this.divId = `radar-chart-div-${count++}`
     this.svgId = `radar-chart-${count++}`
     this.radius = Math.min(RADAR_WIDTH/2, RADAR_HEIGHT/2) * 0.95
+
+    this.state = {
+      clickedBlip: null,
+      hoveredHalf: 'right',
+    }
   }
 
 
@@ -39,8 +53,8 @@ class Radar extends Component {
     const { blips } = this.props.data
 
     const { svg, g } = initateSvg(divId, svgId, RADAR_WIDTH, RADAR_HEIGHT)
-    drawBackgroundCirclesAndAxis(svg, g, radius, blips)
-    drawBlips(svg, g, radius, blips)
+    drawBackgroundCirclesAndAxis(svg, g, radius, blips, half => this.setState({ hoveredHalf: half }))
+    drawBlips(svg, g, radius, blips, half => this.setState({ hoveredHalf: half }))
   }
 
   componentWillMount() {
@@ -48,6 +62,7 @@ class Radar extends Component {
 
   render() {
     const { classes } = this.props
+    const { hoveredHalf } = this.state
     const { divId, svgId } = this
     const { blips } = this.props.data
     const blipsGroupBySector = blips.reduce((acc, cur, idx) => {
@@ -63,14 +78,14 @@ class Radar extends Component {
 
     return (
       <div className={classes.root}>
-        <div className={classes.detailColumn}>
-          <DetailSection radarWidth={RADAR_WIDTH} sectorName={sectors[3]} entries={blipsGroupBySector[sectors[3]]}/>
-          <DetailSection radarWidth={RADAR_WIDTH} sectorName={sectors[2]} entries={blipsGroupBySector[sectors[2]]}/>
+        <div className={ hoveredHalf === 'left' ? classes.detailColumn : classes.detailColumnCollapsed } style={{transform: 'scale(-1,1)'}}>
+          <DetailSection radarWidth={RADAR_WIDTH} sectorName={sectors[3]} entries={blipsGroupBySector[sectors[3]]} flipped={true}/>
+          <DetailSection radarWidth={RADAR_WIDTH} sectorName={sectors[2]} entries={blipsGroupBySector[sectors[2]]} flipped={true}/>
         </div>
         <div id={divId}>
           <svg id={svgId}></svg>
         </div>
-        <div className={classes.detailColumn}>
+        <div className={ hoveredHalf === 'right' ? classes.detailColumn : classes.detailColumnCollapsed }>
           <DetailSection radarWidth={RADAR_WIDTH} sectorName={sectors[0]} entries={blipsGroupBySector[sectors[0]]}/>
           <DetailSection radarWidth={RADAR_WIDTH} sectorName={sectors[1]} entries={blipsGroupBySector[sectors[1]]}/>
         </div>
