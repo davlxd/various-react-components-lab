@@ -6,6 +6,7 @@ import Radar from '../Radar'
 const styles = theme => ({
   root: {
     // backgroundColor: '#f3f9fe',
+    padding: '100px',
   },
 })
 
@@ -14,14 +15,13 @@ class Test extends Component {
     super(props)
     this.state = {
       radarData:  {
-        ui: { width: 800, height: 600 },
         data: {
           misc: {},
           blips: [
-            { sector: 'UnderWit', name: 'Unmistakeable', score: 8, detail: '' },
-            { sector: 'UnderWit', name: 'Unmistak0', score: 8, detail: '' },
-            { sector: 'UnderWit', name: 'Unmistak1', score: 8, detail: '' },
-            { sector: 'UnderWit', name: 'Unmistak2', score: 8, detail: '' },
+            { sector: 'UnderWit', name: 'Unmistakeable', score: 8, desc: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quos blanditiis tenetur' },
+            { sector: 'UnderWit', name: 'Unmistak0', score: 8, desc: '' },
+            { sector: 'UnderWit', name: 'Unmistak1', score: 8, desc: '' },
+            { sector: 'UnderWit', name: 'Unmistak2', score: 8, desc: '' },
             { sector: 'UnderWit', name: 'Unequivocal', score: 8 },
             { sector: 'UnderWit', name: 'Telegramph1', score: 7 },
             { sector: 'UnderWit', name: 'Telegramph2', score: 7 },
@@ -29,6 +29,7 @@ class Test extends Component {
             { sector: 'UnderWit', name: 'Telegramph4', score: 7 },
             { sector: 'UnderWit', name: 'Telegramph5', score: 7 },
             { sector: 'UnderWit', name: 'Block', score: 6 },
+            { sector: 'UnderWit', name: 'Showing', score: 8 },
             { sector: 'UnderWit', name: 'Showing', score: 8 },
 
             { sector: 'Sightworthy', name: 'Illustration', score: 8 },
@@ -43,7 +44,7 @@ class Test extends Component {
             { sector: 'whicker', name: 'Planet Earth Lambda', score: 8 },
             { sector: 'whicker', name: 'Planet Mars', score: 8 },
 
-            { sector: 'UPAS', name: 'XO', score: 8 },
+            { sector: 'UPAS', name: 'XO', score: 8, desc: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit'},
             { sector: 'UPAS', name: 'Measured', score: 7 },
             { sector: 'UPAS', name: 'With', score: 6 },
           ]

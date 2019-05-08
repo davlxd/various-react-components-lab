@@ -194,7 +194,7 @@ const drawBlips = (svg, g, radius, blips) => {
                                                       .attr('dad-name', d => d.dad.name)
 
   const simulation2 = d3.forceSimulation(withPlaceholdingCircles)
-                       .force('collide', d3.forceCollide(d => d.radius).strength(0.9))
+                       .force('collide', d3.forceCollide(d => d.radius).strength(0.99))
                        .force('position-placeholding-circles', forcePlaceholdingCirclesTailingDad())
                        .on('tick', positionSymbolAndText)
                        .alphaDecay(0.01)
