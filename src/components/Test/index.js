@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
 import { withStyles } from '@material-ui/core/styles'
 
-import Radar from '../Radar'
+import WorldMap from '../WorldMap'
 
 const styles = theme => ({
   root: {
-    // backgroundColor: '#f3f9fe',
+    backgroundColor: '#f3f9fe',
     padding: '100px',
   },
 })
@@ -66,7 +66,7 @@ class Test extends Component {
     const { radarData } = this.state
     return (
       <div className={classes.root}>
-        <Radar {...radarData} />
+        <WorldMap />
       </div>
     )
   }
