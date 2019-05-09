@@ -40,9 +40,6 @@ const styles = theme => ({
 class DetailSection extends Component {
   constructor(props) {
     super(props)
-    this.state = {
-      open: false
-    }
   }
 
   toggleDesc() {
@@ -52,21 +49,25 @@ class DetailSection extends Component {
   }
 
   componentDidMount() {
-
   }
 
   render() {
-    const { classes, sectorName, entries, radarWidth, flipped, } = this.props
-    const { open, } = this.state
+    const { classes, sectorName, entries, radarWidth, flipped, onClickBlip, clickedBlip, } = this.props
+    const flipIfNecessary = flipped => ({ transform: flipped? 'scale(-1, 1)' : null })
+    const expandDescIfNecessary = entry => clickedBlip &&
+                                           clickedBlip.sectorIndex === entry.sectorIndex &&
+                                           clickedBlip.name === entry.name
+                                           ? classes.descExpand : classes.desc
+
     return (
       <section className={classes.detailSection}>
-        <Typography variant="h5" className={classes.sectorName} style={{ width: radarWidth / 4, transform: flipped ? 'scale(-1, 1)': null }} gutterBottom> {sectorName} </Typography>
+        <Typography variant="h5" className={classes.sectorName} style={{ width: radarWidth / 4, ...flipIfNecessary(flipped) }} gutterBottom> {sectorName} </Typography>
         <div className={classes.entries} style={{width: radarWidth / 4, columnWidth: radarWidth / 4}}>
           {entries.map(entry => (
-            <div className={classes.entry} key={entry.key} style={{transform: flipped ? 'scale(-1, 1)': null}}>
-              <Typography variant="subtitle1" className={classes.blipName} inline={true} onClick={() => this.toggleDesc()}> {entry.name} </Typography>
+            <div className={classes.entry} key={entry.key} style={flipIfNecessary(flipped)}>
+              <Typography variant="subtitle1" className={classes.blipName} inline={true} onClick={() => onClickBlip(entry.sector, entry.name)}> {entry.name} </Typography>
               {entry.desc &&
-                <Typography variant="body2" className={open ? classes.descExpand : classes.desc} style={{width: radarWidth / 4}}> {entry.desc} </Typography>
+                <Typography variant="body2" className={expandDescIfNecessary(entry)} style={{width: radarWidth / 4}}> {entry.desc} </Typography>
               }
             </div>
           ))}
@@ -85,6 +86,8 @@ DetailSection.propTypes = {
   radarWidth: PropTypes.number.isRequired,
   sectorName: PropTypes.string.isRequired,
   entries: PropTypes.array.isRequired,
+  onClickBlip: PropTypes.func,
+  clickedBlip: PropTypes.object,
   flipped: PropTypes.bool,
 }
 

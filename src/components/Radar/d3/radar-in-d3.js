@@ -13,6 +13,7 @@ const initateSvg = (divId, svgId, width, height) => {
                                .attr('id', svgId)
                                .attr('width', width)
                                .attr('height', height)
+                               .style('user-select', 'none')
   const g = svg.append('g')
                .attr('transform', `translate(${width/2}, ${height/2})`)
   return { svg, g }
@@ -131,7 +132,7 @@ const enhanceBlipsData = (radius, blips) => {
   })
 }
 
-const drawBlips = (svg, g, radius, blips, hoverOnHalf) => {
+const drawBlips = (svg, g, radius, blips, hoverOnHalf, clickOnBlip) => {
   const color = d3.scaleOrdinal(d3.schemeCategory10)
   const enhancedBlips = enhanceBlipsData(radius, blips)
 
@@ -144,8 +145,12 @@ const drawBlips = (svg, g, radius, blips, hoverOnHalf) => {
                       .attr('class', 'blip')
                       .attr('sector-name', d => d.sector)
                       .attr('sector-index', d => d.sectorIndex)
+                      .style('cursor', 'pointer')
                       .on('mouseover', ({ sectorIndex }) => {
                         hoverOnHalf(sectorIndex === 0 || sectorIndex === 1 ? 'right' : 'left')
+                      })
+                      .on('click', ({ sector, name }) => {
+                        clickOnBlip(sector, name)
                       })
 
   const eachBlipSymbol = eachBlip.append(d => document.createElementNS(d3.namespaces.svg, d.shapeName))
