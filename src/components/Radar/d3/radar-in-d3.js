@@ -20,7 +20,17 @@ const initateSvg = (divId, svgId, width, height) => {
 }
 
 
-const drawBackgroundCirclesAndAxis = (svg, g, radius, blips, hoverOnHalf) => {
+const hoverInSectorEffect = (g, sectorIndex) => {
+  g.selectAll(`.sector-${sectorIndex} path`).transition().duration('100').style('fill-opacity', (d, i) => (1 - 0.2 * i))
+  g.select(`g.sector-labels > text.sector-label-${sectorIndex}`).transition().duration('100').attr('font-weight', 700)
+}
+
+const hoverOutSectorEffect = (g, sectorIndex) => {
+  g.selectAll(`.sector-${sectorIndex} path`).transition().duration('100').style('fill-opacity', (d, i) => (0.7 - 0.2 * i))
+  g.select(`g.sector-labels > text.sector-label-${sectorIndex}`).transition().duration('100').attr('font-weight', 200)
+}
+
+const drawBackgroundCirclesAndAxis = (svg, g, width, height, radius, blips, hoverOnSector) => {
   const sectorNames = [...new Set(blips.map(blip => blip.sector))]
   const sectorCount = sectorNames.length
 
@@ -48,13 +58,33 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips, hoverOnHalf) => {
     const newR = r + 14
     return { x: sin * newR, y: cos * newR}
   }
+
+
+  const eachSectorRectBackdrop = g.append('g').attr('class', 'sector-rect-backdrop')
+                                              .selectAll('rect')
+                                              .data(sectorNames)
+                                              .enter()
+                                                .append('rect')
+                                                .attr('x', (d, i) => i === 0 || i === 1 ? 0 : - width / 2)
+                                                .attr('y', (d, i) => i === 1 || i === 2 ? 0 : - height / 2)
+                                                .attr('width', width / 2)
+                                                .attr('height', height / 2)
+                                                .attr('fill-opacity', 0)
+                                                .style('z-index', -100)
+                                                .on('mouseover', (d, i) => {
+                                                  hoverInSectorEffect(g, i)
+                                                  hoverOnSector(i)
+                                                })
+                                                .on('mouseout', (d, i) => {
+                                                  hoverOutSectorEffect(g, i)
+                                                })
+
   const sectorG = g.append('g').attr('class', 'background-circle')
                                .selectAll('path')
                                .data(arcs)
                                .enter()
                                  .append('g')
                                  .attr('class', (d, i) => `sector-${i}`)
-
 
   sectorG.selectAll('path')
          .data((d, i) => [{d, i}, {d, i}, {d, i}])
@@ -63,16 +93,15 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips, hoverOnHalf) => {
          .style('fill', '#DBDBDB')
          .attr('d', ({ d }, i) => arcConfig(i)(d) )
          .style('fill-opacity', (d, i) => (0.7 - 0.2 * i))
+         .style('z-index', 0)
          .on('mouseover', ({ d, i }, j) => {  // i is sector index, j is annulusIndex
-           sectorG.selectAll(`.sector-${i} path`).transition().duration('100').style('fill-opacity', (d, i) => (1 - 0.2 * i))
-           g.select(`g.sector-labels > text.sector-label-${i}`).transition().duration('100').attr('font-weight', 500)
-
-           hoverOnHalf(i === 0 || i === 1 ? 'right' : 'left')
+           hoverInSectorEffect(g, i)
+           hoverOnSector(i)
          })
          .on('mouseout', ({ d, i }, j) => {
-           sectorG.selectAll(`.sector-${i} path`).transition().duration('100').style('fill-opacity', (d, i) => (0.7 - 0.2 * i))
-           g.select(`g.sector-labels > text.sector-label-${i}`).transition().duration('100').attr('font-weight', 200)
+           hoverOutSectorEffect(g, i)
          })
+
 
   const eachSectorLabel = g.append('g').attr('class', 'sector-labels')
                                        .selectAll('text')
@@ -82,9 +111,16 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips, hoverOnHalf) => {
                                          .attr('class', (d, i) => `sector-label-${i}`)
                                          .attr('x', (d, i) => Math.sin(Math.PI/4) * radius * (i === 0 || i === 1 ? 1 : -1))
                                          .attr('y', (d, i) => Math.sin(Math.PI/4) * radius * (i === 1 || i === 2 ? 1 : -1))
-                                         .attr('font-size', '1.3em')
+                                         .attr('font-size', '1.5em')
                                          .attr('font-weight', 200)
                                          .text(d => d.toUpperCase())
+                                         .on('mouseover', (d, i) => {
+                                           hoverInSectorEffect(g, i)
+                                           hoverOnSector(i)
+                                         })
+                                         .on('mouseout', (d, i) => {
+                                           hoverOutSectorEffect(g, i)
+                                         })
 
   const sectorLabelBBox = index => eachSectorLabel.nodes()[index].getBBox()
 
@@ -114,7 +150,7 @@ const enhanceBlipsData = (radius, blips) => {
   })
 }
 
-const drawBlips = (svg, g, radius, blips, hoverOnHalf, clickOnBlip) => {
+const drawBlips = (svg, g, radius, blips, hoverOnSector, clickOnBlip) => {
   const color = d3.scaleOrdinal(d3.schemeCategory10)
   const enhancedBlips = enhanceBlipsData(radius, blips)
 
@@ -130,9 +166,11 @@ const drawBlips = (svg, g, radius, blips, hoverOnHalf, clickOnBlip) => {
                       .style('cursor', 'pointer')
                       .style('pointer-events', 'click')
                       .on('mouseover', ({ sectorIndex }) => {
-                        g.selectAll(`.sector-${sectorIndex} path`).transition().duration('100').style('fill-opacity', (d, i) => (1 - 0.2 * i))
-                        g.select(`g.sector-labels > text.sector-label-${sectorIndex}`).transition().duration('100').attr('font-weight', 500)
-                        hoverOnHalf(sectorIndex === 0 || sectorIndex === 1 ? 'right' : 'left')
+                        hoverInSectorEffect(g, sectorIndex)
+                        hoverOnSector(sectorIndex)
+                      })
+                      .on('mouseout', ({ sectorIndex}) => {
+                        hoverOutSectorEffect(g, sectorIndex)
                       })
                       .on('click', ({ sector, name }) => {
                         clickOnBlip(sector, name)
@@ -196,6 +234,7 @@ const drawBlips = (svg, g, radius, blips, hoverOnHalf, clickOnBlip) => {
                                                       .append('g')
                                                       .attr('class', 'fake-circle')
                                                       .append('circle')
+                                                      .style('pointer-events', 'none')
                                                       .attr('r', d => d.radius)
                                                       .attr('cx', d => d.x)
                                                       .attr('cy', d => d.x)
@@ -205,7 +244,7 @@ const drawBlips = (svg, g, radius, blips, hoverOnHalf, clickOnBlip) => {
                                                       .attr('dad-name', d => d.dad.name)
 
   const simulation2 = d3.forceSimulation(withPlaceholdingCircles)
-                       .force('collide', d3.forceCollide(d => d.radius).strength(0.99))
+                       .force('collide', d3.forceCollide(d => d.radius).strength(0.999))
                        .force('position-placeholding-circles', forcePlaceholdingCirclesTailingDad())
                        .on('tick', positionSymbolAndText)
                        .alphaDecay(0.01)
