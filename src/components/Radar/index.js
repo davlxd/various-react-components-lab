@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import { withStyles } from '@material-ui/core/styles'
-import CssBaseline from '@material-ui/core/CssBaseline'
 
 import DetailSection from './detail-section'
 import { initateSvg, drawBackgroundCirclesAndAxis, drawBlips } from './d3/radar-in-d3'

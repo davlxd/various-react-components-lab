@@ -30,6 +30,7 @@ const hoverOutSectorEffect = (g, sectorIndex) => {
   g.select(`g.sector-labels > text.sector-label-${sectorIndex}`).transition().duration('100').attr('font-weight', 200)
 }
 
+
 const drawBackgroundCirclesAndAxis = (svg, g, width, height, radius, blips, hoverOnSector) => {
   const sectorNames = [...new Set(blips.map(blip => blip.sector))]
   const sectorCount = sectorNames.length
@@ -49,7 +50,6 @@ const drawBackgroundCirclesAndAxis = (svg, g, width, height, radius, blips, hove
     }
     return d3.arc().padAngle(padAngleValue).innerRadius(innerRadiusValue).cornerRadius(cornerRadiusValue).outerRadius(outerRadiusValue)
   }
-  //TODO split mouseover out of this function
 
   const newBlipCoordinatesOnFocus = (x, y) => {
     const r = Math.sqrt(x * x + y * y)
@@ -58,7 +58,6 @@ const drawBackgroundCirclesAndAxis = (svg, g, width, height, radius, blips, hove
     const newR = r + 14
     return { x: sin * newR, y: cos * newR}
   }
-
 
   const eachSectorRectBackdrop = g.append('g').attr('class', 'sector-rect-backdrop')
                                               .selectAll('rect')
@@ -101,7 +100,6 @@ const drawBackgroundCirclesAndAxis = (svg, g, width, height, radius, blips, hove
          .on('mouseout', ({ d, i }, j) => {
            hoverOutSectorEffect(g, i)
          })
-
 
   const eachSectorLabel = g.append('g').attr('class', 'sector-labels')
                                        .selectAll('text')
