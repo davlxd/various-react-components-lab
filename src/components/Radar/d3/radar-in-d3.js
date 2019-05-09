@@ -64,24 +64,22 @@ const drawBackgroundCirclesAndAxis = (svg, g, radius, blips, hoverOnHalf) => {
          .attr('d', ({ d }, i) => arcConfig(i)(d) )
          .style('fill-opacity', (d, i) => (0.7 - 0.2 * i))
          .on('mouseover', ({ d, i }, j) => {  // i is sector index, j is annulusIndex
-           sectorG.selectAll(`.sector-${i} path`)
-                    .transition().duration('200')
-                    // .attr('d', ({ d }, i) => arcConfig(i, true)(d) )
-                    .style('fill-opacity', (d, i) => (1 - 0.2 * i))
+           sectorG.selectAll(`.sector-${i} path`).transition().duration('100').style('fill-opacity', (d, i) => (1 - 0.2 * i))
+           g.select(`g.sector-labels > text.sector-label-${i}`).transition().duration('100').attr('font-weight', 500)
+
            hoverOnHalf(i === 0 || i === 1 ? 'right' : 'left')
          })
          .on('mouseout', ({ d, i }, j) => {
-           sectorG.selectAll(`.sector-${i} path`)
-                    .transition().duration('200')
-                    // .attr('d', ({ d }, i) => arcConfig(i, false)(d) )
-                    .style('fill-opacity', (d, i) => (0.7 - 0.2 * i))
+           sectorG.selectAll(`.sector-${i} path`).transition().duration('100').style('fill-opacity', (d, i) => (0.7 - 0.2 * i))
+           g.select(`g.sector-labels > text.sector-label-${i}`).transition().duration('100').attr('font-weight', 200)
          })
 
-  const eachSectorLabel = g.append('g').attr('class', 'sector-label')
-                                       .selectAll('rect')
+  const eachSectorLabel = g.append('g').attr('class', 'sector-labels')
+                                       .selectAll('text')
                                        .data(sectorNames)
                                        .enter()
                                          .append('text')
+                                         .attr('class', (d, i) => `sector-label-${i}`)
                                          .attr('x', (d, i) => Math.sin(Math.PI/4) * radius * (i === 0 || i === 1 ? 1 : -1))
                                          .attr('y', (d, i) => Math.sin(Math.PI/4) * radius * (i === 1 || i === 2 ? 1 : -1))
                                          .attr('font-size', '1.3em')
@@ -130,7 +128,10 @@ const drawBlips = (svg, g, radius, blips, hoverOnHalf, clickOnBlip) => {
                       .attr('sector-name', d => d.sector)
                       .attr('sector-index', d => d.sectorIndex)
                       .style('cursor', 'pointer')
+                      .style('pointer-events', 'click')
                       .on('mouseover', ({ sectorIndex }) => {
+                        g.selectAll(`.sector-${sectorIndex} path`).transition().duration('100').style('fill-opacity', (d, i) => (1 - 0.2 * i))
+                        g.select(`g.sector-labels > text.sector-label-${sectorIndex}`).transition().duration('100').attr('font-weight', 500)
                         hoverOnHalf(sectorIndex === 0 || sectorIndex === 1 ? 'right' : 'left')
                       })
                       .on('click', ({ sector, name }) => {
