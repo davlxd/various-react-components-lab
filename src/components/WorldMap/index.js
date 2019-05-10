@@ -20,7 +20,7 @@ const styles = theme => ({
   },
   boundary: {
     fill: 'none',
-    stroke: '#fff',
+    stroke: '#b0bec5',
     strokeWidth: '.5px',
     pointerEvents: 'none',
   }
@@ -69,12 +69,12 @@ class WorldMap extends Component {
           .attr('ocean', d => d.properties.isOcean)
           .attr('utf-offset', d => tzidToUTCOffset(d.id))
           .attr('d', path)
-          .style('fill', d => d.properties.isOcean ? '#E2F3F2' : colorScheme(d.properties.country))
+          .style('fill', d => d.properties.isOcean ? '#aadaff' : '#f9f6e4')
           .on('mouseover', function(d) {
             console.log(this, d3.select(this).attr('ocean'), this.getBBox(), d)
           })
-          // .on('mouseover', function(d){ d3.select(this).style('fill', 'orange') ; console.log(this.getBBox(), d)  })
-          // .on('mouseout', function(d){ d3.select(this).style('fill', 'black')  })
+          .on('mouseover', function(d){ d3.select(this).style('fill', 'blue') ; console.log(this.getBBox(), d)  })
+          .on('mouseout', function(d){ d3.select(this).style('fill', d => d.properties.isOcean ? '#aadaff' : '#f9f6e4')  })
           .append('title').text( d => d.properties.country )
 
      svg.insert('path')
