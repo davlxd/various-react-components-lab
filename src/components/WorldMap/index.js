@@ -77,10 +77,22 @@ class WorldMap extends Component {
           .on('mouseout', function(d){ d3.select(this).style('fill', d => d.properties.isOcean ? '#aadaff' : '#ffffd9')  })
           .append('title').text( d => d.properties.country )
 
-     svg.insert('path')
+     svg.select('g').insert('path')
           .datum(topojson.mesh(timezones, timezones.objects.timezones, (a, b) => a.properties.country !== b.properties.country))
           .attr('class', classes.boundary)
           .attr('d', path)
+
+     const peoplePerPixel = 50000
+     const shanghai_population = 22315474
+     const rScale = d3.scaleSqrt().domain([0, shanghai_population]).range([0, Math.sqrt(shanghai_population / (peoplePerPixel * Math.PI))])
+     d3.csv('/geonames_cities100000.csv', d => {
+       svg.select('g').append('circle')
+                        .attr("cx", projection([d.longitude, d.latitude])[0])
+                        .attr("cy", projection([d.longitude, d.latitude])[1])
+                        .attr("r",  rScale(d.population))
+                        .style('fill', '#c34a04')
+                        .style('opacity', '0.5')
+     })
   }
   componentDidMount() {
     this.drawMap()
