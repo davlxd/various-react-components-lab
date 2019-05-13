@@ -69,12 +69,12 @@ class WorldMap extends Component {
           .attr('ocean', d => d.properties.isOcean)
           .attr('utf-offset', d => tzidToUTCOffset(d.id))
           .attr('d', path)
-          .style('fill', d => d.properties.isOcean ? '#aadaff' : '#f9f6e4')
+          .style('fill', d => d.properties.isOcean ? '#aadaff' : '#ffffd9')
           .on('mouseover', function(d) {
             console.log(this, d3.select(this).attr('ocean'), this.getBBox(), d)
           })
           .on('mouseover', function(d){ d3.select(this).style('fill', 'blue') ; console.log(this.getBBox(), d)  })
-          .on('mouseout', function(d){ d3.select(this).style('fill', d => d.properties.isOcean ? '#aadaff' : '#f9f6e4')  })
+          .on('mouseout', function(d){ d3.select(this).style('fill', d => d.properties.isOcean ? '#aadaff' : '#ffffd9')  })
           .append('title').text( d => d.properties.country )
 
      svg.insert('path')
