@@ -1,15 +1,14 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { withStyles } from '@material-ui/core/styles'
 
 import * as d3 from 'd3'
 import * as topojson from 'topojson-client'
 
-
 import timezones from './data/timezones'
-import worldMapCountryColor from './data/cia-world-map-country-color'
 
 const moment = require('moment-timezone')
-const seedrandom = require('seedrandom')
+
 
 const styles = theme => ({
   root: {
@@ -39,15 +38,14 @@ const tzidToUTCOffset = tzid => {
   return moment.tz.zone(tzid).utcOffset(moment()) / 60
 }
 
+
 class WorldMap extends Component {
+  constructor(props) {
+    super(props)
+    this.widthHeightRatio = 500 / 960
+  }
 
-  drawMap() {
-    const { classes } = this.props
-
-    const worldMapMinHeightRatio = 0.9
-    const width = window.innerWidth <= window.innerHeight ? window.innerWidth : (window.innerHeight * worldMapMinHeightRatio) / (500 / 960)
-    // const width = 960
-    const height = width * (500 / 960)
+  drawMap(width, height) {
     const projection = d3.geoMercator()
                          .scale(width / 2 / Math.PI)
                          .translate([width / 2, height * 0.6])
@@ -59,30 +57,6 @@ class WorldMap extends Component {
                   .attr('width', width)
                   .attr('height', height)
 
-    const defs = svg.append('defs')
-
-    //Filter for the outside glow
-    const filter = defs.append('filter').attr('id','glow')
-    filter.append('feGaussianBlur').attr('stdDeviation', 10).attr('result', 'coloredBlur')
-    const feMerge = filter.append('feMerge')
-    feMerge.append('feMergeNode').attr('in', 'coloredBlur')
-    feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
-
-    const countries = [...new Set(timezones.objects.timezones.geometries.map(geometry => geometry.properties.country))]
-    // const smallCountryColorScheme = d3.scaleOrdinal(['#FFCB4E','#F9F4A8','#FCF69F','#89C562','#D3E15B','#8FCEBC','#FFF798','#3BBA9A','#88BE67',])
-    // const colorScheme = country => worldMapCountryColor[country] || smallCountryColorScheme(countries.indexOf(country))
-
-    // console.log(d3.schemeYlOrBr)
-    // const smallCountryColorScheme = d3.scaleOrdinal(d3.schemeYlOrBr[9].slice(0, 3))
-    // const colorScheme = country => smallCountryColorScheme(countries.indexOf(country))
-
-    // const smallCountryColorScheme = d3.scaleOrdinal([0, 0.025, 0.05, 0.075, 0.1, 0.125].map(t => d3.interpolateYlOrBr(t)))
-    // const colorScheme = country => smallCountryColorScheme(countries.indexOf(country))
-
-    // console.log(d3.schemePastel1)
-    // const smallCountryColorScheme = d3.scaleOrdinal(d3.schemePastel1)
-    // const colorScheme = country => smallCountryColorScheme(countries.indexOf(country))
-
     svg.insert('g')
         .selectAll('path')
           .data(topojson.feature(timezones, timezones.objects.timezones).features)
@@ -92,8 +66,6 @@ class WorldMap extends Component {
           .attr('utf-offset', d => tzidToUTCOffset(d.id))
           .attr('d', path)
           .style('fill', d => d.properties.isOcean ? '#aadaff' : '#ffffd9')
-          // .style('fill', d => d.properties.isOcean ? '#aadaff' : colorScheme(d.properties.country))
-          // .style('opacity', d => d.properties.isOcean ? 1 : 0.5)
           .on('mouseover', function(d) {
             console.log(this, d3.select(this).attr('ocean'), this.getBBox(), d)
           })
@@ -103,24 +75,20 @@ class WorldMap extends Component {
 
      svg.select('g').insert('path')
           .datum(topojson.mesh(timezones, timezones.objects.timezones, (a, b) => a.properties.country !== b.properties.country))
-          .attr('class', classes.boundary)
+          .style('fill', 'none')
+          .style('stroke', '#b0bec5')
+          .style('stroke-width', 0.5)
+          .style('pointer-events', 'none')
           .attr('d', path)
 
-     const peoplePerPixel = 50000
-     const shanghai_population = 22315474
-     const rScale = d3.scaleSqrt().domain([0, shanghai_population]).range([0, Math.sqrt(shanghai_population / (peoplePerPixel * Math.PI))])
-     // d3.csv('/geonames_cities100000.csv', d => {
-     //   svg.select('g').append('circle')
-     //                    .attr('cx', projection([d.longitude, d.latitude])[0])
-     //                    .attr('cy', projection([d.longitude, d.latitude])[1])
-     //                    .attr('r',  rScale(d.population))
-     //                    .style('fill', '#c34a04')
-     //                    .style('opacity', '0.8')
-     //                    .style('filter', 'url(#glow)');
-     // })
   }
   componentDidMount() {
-    this.drawMap()
+    let { width } = this.props
+    const MIN_HEIGHT_RATIO = 0.9
+
+    width = width || window.innerWidth <= window.innerHeight ? window.innerWidth : (window.innerHeight * MIN_HEIGHT_RATIO) / this.widthHeightRatio
+
+    this.drawMap(width, width * this.widthHeightRatio)
   }
 
   componentWillMount() {
@@ -136,5 +104,9 @@ class WorldMap extends Component {
   }
 }
 
+
+WorldMap.propTypes = {
+  width: PropTypes.number
+}
 
 export default withStyles(styles)(WorldMap)
