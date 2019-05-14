@@ -6,7 +6,7 @@ import * as d3 from 'd3'
 import * as topojson from 'topojson-client'
 
 import timezones from './data/timezones'
-
+import TimeDiffIndicator from './time-diff-indicator'
 const moment = require('moment-timezone')
 
 
@@ -15,6 +15,8 @@ const styles = theme => ({
     backgroundColor: '#dae0e4',
     display: 'flex',
     justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
     // position: 'absolute',
     // top: '100px',
     // left: '100px',
@@ -99,6 +101,7 @@ class WorldMap extends Component {
     return (
       <div id='worldmap-wrapper' className={classes.root}>
         <svg id='worldmap-svg'></svg>
+        <TimeDiffIndicator />
       </div>
     )
   }
