@@ -38,6 +38,8 @@
     ]
   },
   "devDependencies": {
+    "enzyme": "^3.9.0",
+    "enzyme-adapter-react-16": "^1.13.0",
     "topojson": "1"
   }
 }

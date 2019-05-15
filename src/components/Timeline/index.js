@@ -14,11 +14,10 @@ class Timeline extends Component {
                                            .map(boundary => moment(boundary))
                                            .sort((a, b) => a.valueOf() - b.valueOf())
     const startingYear = boundariesInMomentObject[0].year()
-    const endingYear = boundariesInMomentObject[boundariesInMomentObject.length - 1].year()
+    const endingYear = boundariesInMomentObject[boundariesInMomentObject.length - 1].year() + 1
 
     const yearSeries = []
-    for (let year = startingYear; year < endingYear; year++) { yearSeries.push(year) }
-
+    for (let year = startingYear; year <= endingYear; year++) { yearSeries.push(year) }
     return yearSeries
   }
   componentDidMount() {
