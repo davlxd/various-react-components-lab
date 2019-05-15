@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { withStyles } from '@material-ui/core/styles'
 
-import WorldMap from '../WorldMap'
+import Timeline from '../Timeline'
 
 const styles = theme => ({
   root: {
@@ -57,16 +57,30 @@ class Test extends Component {
             { sector: 'UPAS', name: 'With', score: 6 },
           ]
         }
+      },
+      timelineData: {
+        ranges: [
+          {
+            from: '2012-07',
+            to: '2014-03',
+            desc: 'hello, world'
+          },
+          {
+            from: '2014-03',
+            to: '2017-01',
+            desc: 'world, hello'
+          },
+        ]
       }
     }
   }
 
   render() {
     const { classes } = this.props
-    const { radarData } = this.state
+    const { radarData, timelineData } = this.state
     return (
       <div className={classes.root}>
-        <WorldMap />
+        <Timeline data={timelineData}/>
       </div>
     )
   }
