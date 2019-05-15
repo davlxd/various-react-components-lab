@@ -5,8 +5,12 @@ import Timeline from '../Timeline'
 
 const styles = theme => ({
   root: {
-    backgroundColor: '#f3f9fe',
-    padding: '100px',
+    paddingTop: 100,
+    paddingBottom: 100,
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
 })
 
@@ -67,7 +71,7 @@ class Test extends Component {
           },
           {
             from: '2014-03',
-            to: '2017-01',
+            to: '2019-01',
             desc: 'world, hello'
           },
         ]

@@ -2,13 +2,23 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { withStyles } from '@material-ui/core/styles'
 
+import { initateSvg, drawAxis } from './d3/axis-in-d3'
 const moment = require('moment')
 
+const DEFAULT_WIDTH = 800
 const styles = theme => ({
-
+  root: {
+    backgroundColor: '#f3f9fe',
+  }
 })
 
 class Timeline extends Component {
+  constructor(props) {
+    super(props)
+    this.divId = 'timeline-svg-div'
+    this.svgId = 'timeline-svg'
+  }
+
   extractYearSeries(ranges) {
     const boundariesInMomentObject = ranges.map(range => range.from).concat(ranges.map(range => range.to))
                                            .map(boundary => moment(boundary))
@@ -20,17 +30,23 @@ class Timeline extends Component {
     for (let year = startingYear; year <= endingYear; year++) { yearSeries.push(year) }
     return yearSeries
   }
+
   componentDidMount() {
+    const { divId, svgId } = this
     const { ranges } = this.props.data
+    const yearSeries = this.extractYearSeries(ranges)
+
+    const svg = initateSvg(divId, svgId, DEFAULT_WIDTH, yearSeries.length)
+    drawAxis(svg, yearSeries, DEFAULT_WIDTH)
   }
 
   render() {
     const { classes } = this.props
+    const { divId, svgId } = this
 
     return (
-      <div className={classes.root}>
-        <svg id='timeline-svg'>
-        </svg>
+      <div id={divId} className={classes.root}>
+        <svg id={svgId}></svg>
       </div>
     )
   }
