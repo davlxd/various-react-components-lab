@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+const moment = require('moment')
 
 
 const PER_YEAR_HEIGHT = 100
@@ -17,7 +18,7 @@ const initateSvg = (divId, svgId, width, howManyYears) => {
   return svg
 }
 
-const drawAxis = (svg, yearSeries, width) => {
+const drawAxis = (svg, width, yearSeries) => {
   const ARROW_HEAD_WIDTH = 8
   const ARROW_HEAD_HEIGHT = 8
   const AXIS_WIDTH = 4
@@ -70,7 +71,53 @@ const drawAxis = (svg, yearSeries, width) => {
           .attr('x2', AXIS_WIDTH / 2 + scaleTextBBox(0).width + SCALE_MARKER_WIDTH / 2)
   eachScaleMarker.attr('x1', AXIS_WIDTH / 2 + scaleTextBBox(0).width)
                  .attr('x2', AXIS_WIDTH / 2 + scaleTextBBox(0).width + SCALE_MARKER_WIDTH)
+
+  return AXIS_WIDTH + scaleTextBBox(0).width + SCALE_MARKER_WIDTH / 2
 }
 
 
-export { initateSvg, drawAxis }
+const rangesToMonthDiff = (ranges, maxYear) => ranges.map(({ from, to }) => ({
+  monthDiffWithMaxYear: moment('' + maxYear + '-01').diff(moment(to), 'months'),
+  monthDiffWithEachOther: moment(to).diff(moment(from), 'months')
+}))
+
+const drawDescBackground = (svg, axisRightBoundary, width, yearSeries, ranges) => {
+  const maxYear = Math.max(...yearSeries)
+  const maxYearY = PER_YEAR_HEIGHT
+  const PER_MOMTH_HEIGHT = PER_YEAR_HEIGHT / 12
+
+  const g = svg.append('g').attr('class', 'desc')
+  const eachDesc = g.selectAll('rect.range')
+                    .data(rangesToMonthDiff(ranges, maxYear))
+                    .enter()
+                      .append('g')
+                      .attr('class', 'range')
+
+  eachDesc.append('rect')
+          .attr('class', 'desc-background')
+          .attr('x', axisRightBoundary)
+          .attr('y', d => maxYearY + d.monthDiffWithMaxYear * PER_MOMTH_HEIGHT)
+          .attr('width', width - axisRightBoundary)
+          .attr('height', d => d.monthDiffWithEachOther * PER_MOMTH_HEIGHT)
+          .style('fill', '#ffffff')
+  eachDesc.append('line')
+          .attr('class', 'ceiling')
+          .attr('x1', axisRightBoundary)
+          .attr('y1', d => maxYearY + d.monthDiffWithMaxYear * PER_MOMTH_HEIGHT)
+          .attr('x2', width)
+          .attr('y2', d => maxYearY + d.monthDiffWithMaxYear * PER_MOMTH_HEIGHT)
+          .attr('stroke-width', 0.5)
+          .attr('stroke', 'black')
+  eachDesc.append('line')
+          .attr('class', 'floor')
+          .attr('x1', axisRightBoundary)
+          .attr('y1', d => maxYearY + (d.monthDiffWithMaxYear + d.monthDiffWithEachOther) * PER_MOMTH_HEIGHT)
+          .attr('x2', width)
+          .attr('y2', d => maxYearY + (d.monthDiffWithMaxYear + d.monthDiffWithEachOther) * PER_MOMTH_HEIGHT)
+          .attr('stroke-width', 0.5)
+          .attr('stroke', 'black')
+
+}
+
+
+export { initateSvg, rangesToMonthDiff, drawAxis, drawDescBackground }

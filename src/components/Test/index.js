@@ -64,16 +64,8 @@ class Test extends Component {
       },
       timelineData: {
         ranges: [
-          {
-            from: '2012-07',
-            to: '2014-03',
-            desc: 'hello, world'
-          },
-          {
-            from: '2014-03',
-            to: '2019-01',
-            desc: 'world, hello'
-          },
+          { from: '2012-07', to: '2014-03', desc: 'hello, world' },
+          { from: '2014-07', to: '2019-01', desc: 'world, hello' },
         ]
       }
     }

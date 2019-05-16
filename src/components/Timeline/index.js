@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { withStyles } from '@material-ui/core/styles'
 
-import { initateSvg, drawAxis } from './d3/axis-in-d3'
+import { initateSvg, drawAxis, drawDescBackground } from './d3/axis-in-d3'
 const moment = require('moment')
 
 const DEFAULT_WIDTH = 800
@@ -37,7 +37,8 @@ class Timeline extends Component {
     const yearSeries = this.extractYearSeries(ranges)
 
     const svg = initateSvg(divId, svgId, DEFAULT_WIDTH, yearSeries.length)
-    drawAxis(svg, yearSeries, DEFAULT_WIDTH)
+    const axisRightBoundary = drawAxis(svg, DEFAULT_WIDTH, yearSeries)
+    drawDescBackground(svg, axisRightBoundary, DEFAULT_WIDTH, yearSeries, ranges)
   }
 
   render() {
